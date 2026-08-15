@@ -1,0 +1,5 @@
+name: ai_support_triage
+channels:
+  - defaults
+dependencies:
+  - python=3.12

@@ -1,5 +1,11 @@
 name: ai_support_triage
+
 channels:
   - defaults
+
 dependencies:
   - python=3.12
+  - pip
+  - pip:
+      - pydantic>=2,<3
+      - pytest>=8,<9

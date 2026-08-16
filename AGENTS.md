@@ -168,4 +168,19 @@ Después de guardarlo, continúa en el proyecto con este mensaje:
 
 Empezamos AI Support Triage. Guíame con un solo paso cada vez. Actualmente todavía tengo que crear y verificar el entorno inicial.
 
+Fases del proyecto
+
+01 — Entorno inicial
+02 — Primer modelo de datos
+03 — API FastAPI
+04 — PostgreSQL
+05 — Docker
+06 — Integración LLM
+07 — Evaluación y pruebas
+08 — README y publicació
+
 Cuando me des los pasos a seguir explicaré el código para comprender los comandos.
+
+Siempre al cambiar de fase se iniciará en otro chat.
+
+Antes de terminar para cambiar de fase dame una explicaron de lo que se esta haciendo y el codigo usado

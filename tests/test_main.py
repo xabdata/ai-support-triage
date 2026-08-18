@@ -57,3 +57,11 @@ def test_triage_rejects_short_subject():
 
     assert response.status_code == 422
     mock_triage.assert_not_called()
+
+
+def test_app_creates_tables_on_startup():
+    with patch("app.main.create_tables") as mock_create_tables:
+        with TestClient(app):
+            pass
+
+    mock_create_tables.assert_called_once_with()

@@ -1,10 +1,23 @@
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 
+from app.database import create_tables
 from app.llm import triage_with_llm
 from app.models import SupportRequest, TriageResult
 
 
-app = FastAPI(title="AI Support Triage")
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    create_tables()
+    yield
+
+
+app = FastAPI(
+    title="AI Support Triage",
+    lifespan=lifespan,
+)
 
 
 @app.get("/health")

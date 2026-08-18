@@ -1,11 +1,14 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
+from sqlalchemy.orm import Session
 
-from app.database import create_tables
+from app.database import create_tables, get_session
 from app.llm import triage_with_llm
 from app.models import SupportRequest, TriageResult
+from app.repository import save_triage_record
 
 
 @asynccontextmanager
@@ -26,5 +29,11 @@ def health_check() -> dict[str, str]:
 
 
 @app.post("/triage", response_model=TriageResult)
-def triage_support_request(request: SupportRequest) -> TriageResult:
-    return triage_with_llm(request)
+def triage_support_request(
+    request: SupportRequest,
+    session: Annotated[Session, Depends(get_session)],
+) -> TriageResult:
+    result = triage_with_llm(request)
+    save_triage_record(session, request, result)
+
+    return result

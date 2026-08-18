@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db_models import TriageRecord
@@ -24,3 +25,9 @@ def save_triage_record(
     session.refresh(record)
 
     return record
+
+
+def list_triage_records(session: Session) -> list[TriageRecord]:
+    statement = select(TriageRecord).order_by(TriageRecord.id.desc())
+
+    return list(session.scalars(statement).all())

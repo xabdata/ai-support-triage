@@ -3,7 +3,7 @@ from unittest.mock import Mock
 from sqlalchemy.orm import Session
 
 from app.models import SupportRequest, TriageResult
-from app.repository import save_triage_record
+from app.repository import list_triage_records, save_triage_record
 
 
 def test_save_triage_record_commits_complete_record():
@@ -33,3 +33,21 @@ def test_save_triage_record_commits_complete_record():
     session.add.assert_called_once_with(saved_record)
     session.commit.assert_called_once_with()
     session.refresh.assert_called_once_with(saved_record)
+
+
+def test_list_triage_records_orders_newest_first():
+    session = Mock(spec=Session)
+    newest_record = object()
+    oldest_record = object()
+    session.scalars.return_value.all.return_value = [
+        newest_record,
+        oldest_record,
+    ]
+
+    records = list_triage_records(session)
+
+    assert records == [newest_record, oldest_record]
+    session.scalars.assert_called_once()
+
+    statement = session.scalars.call_args.args[0]
+    assert "ORDER BY triage_records.id DESC" in str(statement)

@@ -1,7 +1,10 @@
+from datetime import UTC, datetime
+from types import SimpleNamespace
+
 import pytest
 from pydantic import ValidationError
 
-from app.models import SupportRequest, TriageResult
+from app.models import SupportRequest, TriageHistoryItem, TriageResult
 
 
 def test_support_request_accepts_valid_data():
@@ -45,3 +48,26 @@ def test_triage_result_rejects_unknown_category():
             next_action="Revisar el estado de su cuenta",
             draft_response="Estamos revisando el problema de acceso a su cuenta",
         )
+
+
+def test_triage_history_item_accepts_orm_attributes():
+    created_at = datetime(2026, 8, 18, 16, 18, tzinfo=UTC)
+    record = SimpleNamespace(
+        id=1,
+        subject="No puedo iniciar sesión",
+        description="Mi contraseña es rechazada desde esta mañana.",
+        category="account",
+        priority="high",
+        summary="El cliente no puede iniciar sesión.",
+        next_action="Ayudar al cliente a restablecer su contraseña.",
+        draft_response="Vamos a ayudarte a recuperar el acceso a tu cuenta.",
+        created_at=created_at,
+    )
+
+    history_item = TriageHistoryItem.model_validate(record)
+
+    assert history_item.id == 1
+    assert history_item.subject == "No puedo iniciar sesión"
+    assert history_item.category == "account"
+    assert history_item.priority == "high"
+    assert history_item.created_at == created_at

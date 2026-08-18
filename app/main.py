@@ -7,8 +7,8 @@ from sqlalchemy.orm import Session
 
 from app.database import create_tables, get_session
 from app.llm import triage_with_llm
-from app.models import SupportRequest, TriageResult
-from app.repository import save_triage_record
+from app.models import SupportRequest, TriageHistoryItem, TriageResult
+from app.repository import list_triage_records, save_triage_record
 
 
 @asynccontextmanager
@@ -37,3 +37,15 @@ def triage_support_request(
     save_triage_record(session, request, result)
 
     return result
+
+
+@app.get("/history", response_model=list[TriageHistoryItem])
+def get_triage_history(
+    session: Annotated[Session, Depends(get_session)],
+) -> list[TriageHistoryItem]:
+    records = list_triage_records(session)
+
+    return [
+        TriageHistoryItem.model_validate(record)
+        for record in records
+    ]

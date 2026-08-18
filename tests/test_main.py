@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
 import pytest
@@ -6,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_session
 from app.main import app
-from app.models import TriageResult
+from app.models import TriageHistoryItem, TriageResult
 
 
 client = TestClient(app)
@@ -83,6 +84,32 @@ def test_triage_rejects_short_subject(database_session):
     assert response.status_code == 422
     mock_triage.assert_not_called()
     mock_save_record.assert_not_called()
+
+
+def test_history_returns_saved_records(database_session):
+    history_item = TriageHistoryItem(
+        id=1,
+        subject="No puedo iniciar sesión",
+        description="Mi contraseña es rechazada desde esta mañana.",
+        category="account",
+        priority="high",
+        summary="El cliente no puede iniciar sesión.",
+        next_action="Ayudar al cliente a restablecer su contraseña.",
+        draft_response="Vamos a ayudarte a recuperar el acceso a tu cuenta.",
+        created_at=datetime(2026, 8, 18, 16, 18, tzinfo=UTC),
+    )
+
+    with patch(
+        "app.main.list_triage_records",
+        return_value=[history_item],
+    ) as mock_list_records:
+        response = client.get("/history")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        history_item.model_dump(mode="json")
+    ]
+    mock_list_records.assert_called_once_with(database_session)
 
 
 def test_app_creates_tables_on_startup():

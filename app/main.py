@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 
-from app.models import SupportRequest
+from app.llm import triage_with_llm
+from app.models import SupportRequest, TriageResult
 
 
 app = FastAPI(title="AI Support Triage")
@@ -11,9 +12,6 @@ def health_check() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/triage")
-def triage_support_request(request: SupportRequest) -> dict[str, str]:
-    return {
-        "message": "Support request received",
-        "subject": request.subject,
-    }
+@app.post("/triage", response_model=TriageResult)
+def triage_support_request(request: SupportRequest) -> TriageResult:
+    return triage_with_llm(request)

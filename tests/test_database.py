@@ -1,6 +1,8 @@
+from unittest.mock import Mock
+
 import pytest
 
-from app.database import get_database_url
+from app.database import Base, create_tables, get_database_url
 
 
 def test_get_database_url_uses_environment_variables(monkeypatch):
@@ -30,3 +32,15 @@ def test_get_database_url_requires_password(monkeypatch):
         match="POSTGRES_PASSWORD environment variable is required",
     ):
         get_database_url()
+
+
+def test_create_tables_uses_database_engine(monkeypatch):
+    fake_engine = object()
+    mock_create_all = Mock()
+
+    monkeypatch.setattr("app.database.get_engine", lambda: fake_engine)
+    monkeypatch.setattr(Base.metadata, "create_all", mock_create_all)
+
+    create_tables()
+
+    mock_create_all.assert_called_once_with(fake_engine)

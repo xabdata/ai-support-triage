@@ -38,6 +38,10 @@ def get_engine() -> Engine:
         pool_pre_ping=True,
     )
 
+def create_tables() -> None:
+    import app.db_models  # Registra los modelos en Base.metadata.
+
+    Base.metadata.create_all(get_engine())
 
 def get_session() -> Generator[Session, None, None]:
     with Session(get_engine()) as session:

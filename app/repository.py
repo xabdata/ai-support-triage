@@ -1,4 +1,5 @@
 from sqlalchemy import select
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.db_models import TriageRecord
@@ -21,7 +22,13 @@ def save_triage_record(
     )
 
     session.add(record)
-    session.commit()
+
+    try:
+        session.commit()
+    except SQLAlchemyError:
+        session.rollback()
+        raise
+
     session.refresh(record)
 
     return record

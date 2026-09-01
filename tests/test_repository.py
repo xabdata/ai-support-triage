@@ -1,5 +1,7 @@
 from unittest.mock import Mock
 
+import pytest
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.models import SupportRequest, TriageResult
@@ -51,3 +53,30 @@ def test_list_triage_records_orders_newest_first():
 
     statement = session.scalars.call_args.args[0]
     assert "ORDER BY triage_records.id DESC" in str(statement)
+
+
+def test_save_triage_record_rolls_back_when_commit_fails():
+    session = Mock(spec=Session)
+    session.commit.side_effect = SQLAlchemyError(
+        "Database unavailable"
+    )
+    request = SupportRequest(
+        subject="Error al iniciar sesión",
+        description="No puedo acceder con mi contraseña.",
+    )
+    result = TriageResult(
+        category="account",
+        priority="high",
+        summary="El cliente no puede iniciar sesión.",
+        next_action="Ayudar al cliente a restablecer su contraseña.",
+        draft_response="Vamos a ayudarte a recuperar el acceso a tu cuenta.",
+    )
+
+    with pytest.raises(
+        SQLAlchemyError,
+        match="Database unavailable",
+    ):
+        save_triage_record(session, request, result)
+
+    session.rollback.assert_called_once_with()
+    session.refresh.assert_not_called()

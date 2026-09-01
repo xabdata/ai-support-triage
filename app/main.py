@@ -2,7 +2,8 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated
 
-from fastapi import Depends, FastAPI
+from fastapi import Depends, FastAPI, HTTPException, status
+from openai import APIError
 from sqlalchemy.orm import Session
 
 from app.database import create_tables, get_session
@@ -33,7 +34,14 @@ def triage_support_request(
     request: SupportRequest,
     session: Annotated[Session, Depends(get_session)],
 ) -> TriageResult:
-    result = triage_with_llm(request)
+    try:
+        result = triage_with_llm(request)
+    except APIError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Triage service is temporarily unavailable",
+        ) from exc
+
     save_triage_record(session, request, result)
 
     return result

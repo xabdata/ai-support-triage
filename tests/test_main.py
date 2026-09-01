@@ -1,9 +1,12 @@
 from datetime import UTC, datetime
 from unittest.mock import Mock, patch
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
+from openai import APIConnectionError
 from sqlalchemy.orm import Session
+
 
 from app.database import get_session
 from app.main import app
@@ -118,3 +121,33 @@ def test_app_creates_tables_on_startup():
             pass
 
     mock_create_tables.assert_called_once_with()
+
+
+def test_triage_returns_503_when_openai_is_unavailable(database_session):
+    openai_error = APIConnectionError(
+        request=httpx.Request(
+            "POST",
+            "https://api.openai.com/v1/responses",
+        )
+    )
+
+    with (
+        patch(
+            "app.main.triage_with_llm",
+            side_effect=openai_error,
+        ),
+        patch("app.main.save_triage_record") as mock_save_record,
+    ):
+        response = client.post(
+            "/triage",
+            json={
+                "subject": "Error al iniciar sesión",
+                "description": "No puedo acceder con mi contraseña",
+            },
+        )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Triage service is temporarily unavailable"
+    }
+    mock_save_record.assert_not_called()

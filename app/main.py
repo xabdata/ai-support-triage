@@ -4,6 +4,7 @@ from typing import Annotated
 
 from fastapi import Depends, FastAPI, HTTPException, status
 from openai import APIError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.database import create_tables, get_session
@@ -42,7 +43,13 @@ def triage_support_request(
             detail="Triage service is temporarily unavailable",
         ) from exc
 
-    save_triage_record(session, request, result)
+    try:
+        save_triage_record(session, request, result)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Triage service is temporarily unavailable",
+        ) from exc
 
     return result
 

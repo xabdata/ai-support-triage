@@ -5,8 +5,8 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 from openai import APIConnectionError
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
-
 
 from app.database import get_session
 from app.main import app
@@ -151,3 +151,39 @@ def test_triage_returns_503_when_openai_is_unavailable(database_session):
         "detail": "Triage service is temporarily unavailable"
     }
     mock_save_record.assert_not_called()
+
+
+def test_triage_returns_503_when_database_is_unavailable(
+    database_session,
+):
+    triage_result = TriageResult(
+        category="account",
+        priority="high",
+        summary="El cliente no puede iniciar sesión.",
+        next_action="Ayudar al cliente a restablecer su contraseña.",
+        draft_response="Vamos a ayudarte a recuperar el acceso a tu cuenta.",
+    )
+    database_error = SQLAlchemyError("Database unavailable")
+
+    with (
+        patch(
+            "app.main.triage_with_llm",
+            return_value=triage_result,
+        ),
+        patch(
+            "app.main.save_triage_record",
+            side_effect=database_error,
+        ),
+    ):
+        response = client.post(
+            "/triage",
+            json={
+                "subject": "Error al iniciar sesión",
+                "description": "No puedo acceder con mi contraseña",
+            },
+        )
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Triage service is temporarily unavailable"
+    }

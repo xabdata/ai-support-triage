@@ -33,3 +33,22 @@ def test_triage_with_llm_returns_structured_result():
         ],
         text_format=TriageResult,
     )
+
+
+def test_system_prompt_defines_triage_rubric():
+    required_rules = (
+        "Category rubric:",
+        "- technical:",
+        "- billing:",
+        "- account:",
+        "- other:",
+        "Priority rubric:",
+        "- low:",
+        "- medium:",
+        "- high:",
+        "- urgent:",
+        "Choose the lowest priority whose conditions are met.",
+    )
+
+    for rule in required_rules:
+        assert rule in SYSTEM_PROMPT

@@ -1,6 +1,8 @@
+import json
 from collections.abc import Callable
+from pathlib import Path
 
-from app.llm import triage_with_llm
+from app.llm import MODEL, triage_with_llm
 from app.models import SupportRequest, TriageResult
 
 
@@ -91,3 +93,36 @@ def evaluate_cases(
         "metrics": calculate_metrics(scores),
         "results": results,
     }
+
+
+def run_evaluation(
+    dataset_path: Path,
+    report_path: Path,
+    triage_function: Callable[
+        [SupportRequest],
+        TriageResult,
+    ] = triage_with_llm,
+) -> dict[str, object]:
+    cases = json.loads(
+        dataset_path.read_text(encoding="utf-8")
+    )
+    evaluation = evaluate_cases(
+        cases,
+        triage_function,
+    )
+    report = {
+        "model": MODEL,
+        **evaluation,
+    }
+
+    report_path.write_text(
+        json.dumps(
+            report,
+            ensure_ascii=False,
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    return report

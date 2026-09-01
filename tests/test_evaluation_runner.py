@@ -1,9 +1,12 @@
+import json
 from unittest.mock import Mock
 
+from app.llm import MODEL
 from app.models import TriageResult
 from evals.run_evaluation import (
     calculate_metrics,
     evaluate_cases,
+    run_evaluation,
     score_case,
 )
 
@@ -107,3 +110,45 @@ def test_evaluate_cases_runs_triage_and_builds_report():
     assert called_request.description == (
         "La misma factura aparece cobrada dos veces."
     )
+
+
+def test_run_evaluation_loads_cases_and_writes_report(
+    tmp_path,
+):
+    dataset_path = tmp_path / "cases.json"
+    report_path = tmp_path / "results.json"
+    case = {
+        "id": "billing-01",
+        "request": {
+            "subject": "Cargo duplicado",
+            "description": "La misma factura aparece cobrada dos veces.",
+        },
+        "expected_category": "billing",
+        "expected_priority": "high",
+    }
+    result = TriageResult(
+        category="billing",
+        priority="high",
+        summary="El cliente informa de un cargo duplicado.",
+        next_action="Revisar los movimientos de facturación.",
+        draft_response="Vamos a revisar los cargos asociados a su cuenta.",
+    )
+    triage_function = Mock(return_value=result)
+
+    dataset_path.write_text(
+        json.dumps([case]),
+        encoding="utf-8",
+    )
+
+    report = run_evaluation(
+        dataset_path,
+        report_path,
+        triage_function,
+    )
+
+    assert report["model"] == MODEL
+    assert report["metrics"]["total_cases"] == 1
+    assert json.loads(
+        report_path.read_text(encoding="utf-8")
+    ) == report
+    triage_function.assert_called_once()

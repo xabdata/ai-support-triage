@@ -1,11 +1,14 @@
 import json
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from app.llm import MODEL
 from app.models import TriageResult
 from evals.run_evaluation import (
+    DATASET_PATH,
+    REPORT_PATH,
     calculate_metrics,
     evaluate_cases,
+    main,
     run_evaluation,
     score_case,
 )
@@ -152,3 +155,37 @@ def test_run_evaluation_loads_cases_and_writes_report(
         report_path.read_text(encoding="utf-8")
     ) == report
     triage_function.assert_called_once()
+
+
+def test_main_uses_default_paths_and_prints_summary(
+    capsys,
+):
+    report = {
+        "model": MODEL,
+        "metrics": {
+            "total_cases": 20,
+            "category_accuracy": 90.0,
+            "priority_accuracy": 80.0,
+            "exact_match_accuracy": 75.0,
+        },
+        "results": [],
+    }
+
+    with patch(
+        "evals.run_evaluation.run_evaluation",
+        return_value=report,
+    ) as mock_run:
+        main()
+
+    dataset_path, report_path, triage_function = (
+        mock_run.call_args.args
+    )
+    assert dataset_path == DATASET_PATH
+    assert report_path == REPORT_PATH
+    assert callable(triage_function)
+
+    output = capsys.readouterr().out
+    assert "20" in output
+    assert "90.0%" in output
+    assert "80.0%" in output
+    assert "75.0%" in output

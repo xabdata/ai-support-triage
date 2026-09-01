@@ -5,6 +5,10 @@ from pathlib import Path
 from app.llm import MODEL, triage_with_llm
 from app.models import SupportRequest, TriageResult
 
+EVALUATION_DIR = Path(__file__).parent
+DATASET_PATH = EVALUATION_DIR / "cases.json"
+REPORT_PATH = EVALUATION_DIR / "results.json"
+
 
 def score_case(
     case: dict[str, object],
@@ -126,3 +130,41 @@ def run_evaluation(
     )
 
     return report
+
+
+def main() -> None:
+    def triage_with_progress(
+        request: SupportRequest,
+    ) -> TriageResult:
+        print(
+            f"Evaluating: {request.subject}",
+            flush=True,
+        )
+        return triage_with_llm(request)
+
+    report = run_evaluation(
+        DATASET_PATH,
+        REPORT_PATH,
+        triage_with_progress,
+    )
+    metrics = report["metrics"]
+
+    print("Evaluation complete")
+    print(f"Cases: {metrics['total_cases']}")
+    print(
+        "Category accuracy: "
+        f"{metrics['category_accuracy']}%"
+    )
+    print(
+        "Priority accuracy: "
+        f"{metrics['priority_accuracy']}%"
+    )
+    print(
+        "Exact match accuracy: "
+        f"{metrics['exact_match_accuracy']}%"
+    )
+    print(f"Report: {REPORT_PATH}")
+
+
+if __name__ == "__main__":
+    main()

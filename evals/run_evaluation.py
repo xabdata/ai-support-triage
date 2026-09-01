@@ -1,4 +1,7 @@
-from app.models import TriageResult
+from collections.abc import Callable
+
+from app.llm import triage_with_llm
+from app.models import SupportRequest, TriageResult
 
 
 def score_case(
@@ -45,4 +48,46 @@ def calculate_metrics(
         "category_accuracy": round(category_accuracy, 2),
         "priority_accuracy": round(priority_accuracy, 2),
         "exact_match_accuracy": round(exact_match_accuracy, 2),
+    }
+
+
+def evaluate_cases(
+    cases: list[dict[str, object]],
+    triage_function: Callable[
+        [SupportRequest],
+        TriageResult,
+    ] = triage_with_llm,
+) -> dict[str, object]:
+    scores: list[dict[str, bool]] = []
+    results: list[dict[str, object]] = []
+
+    for case in cases:
+        request = SupportRequest.model_validate(
+            case["request"]
+        )
+        result = triage_function(request)
+        score = score_case(case, result)
+
+        scores.append(score)
+        results.append(
+            {
+                "id": case["id"],
+                "expected_category": case[
+                    "expected_category"
+                ],
+                "actual_category": result.category,
+                "expected_priority": case[
+                    "expected_priority"
+                ],
+                "actual_priority": result.priority,
+                **score,
+                "summary": result.summary,
+                "next_action": result.next_action,
+                "draft_response": result.draft_response,
+            }
+        )
+
+    return {
+        "metrics": calculate_metrics(scores),
+        "results": results,
     }

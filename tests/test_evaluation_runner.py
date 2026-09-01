@@ -1,5 +1,5 @@
 from app.models import TriageResult
-from evals.run_evaluation import score_case
+from evals.run_evaluation import calculate_metrics, score_case
 
 
 def test_score_case_compares_category_and_priority():
@@ -21,4 +21,28 @@ def test_score_case_compares_category_and_priority():
         "category_correct": True,
         "priority_correct": False,
         "exact_match": False,
+    }
+
+
+def test_calculate_metrics_returns_accuracy_percentages():
+    scores = [
+        {
+            "category_correct": True,
+            "priority_correct": True,
+            "exact_match": True,
+        },
+        {
+            "category_correct": True,
+            "priority_correct": False,
+            "exact_match": False,
+        },
+    ]
+
+    metrics = calculate_metrics(scores)
+
+    assert metrics == {
+        "total_cases": 2,
+        "category_accuracy": 100.0,
+        "priority_accuracy": 50.0,
+        "exact_match_accuracy": 50.0,
     }

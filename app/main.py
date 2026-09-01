@@ -58,7 +58,13 @@ def triage_support_request(
 def get_triage_history(
     session: Annotated[Session, Depends(get_session)],
 ) -> list[TriageHistoryItem]:
-    records = list_triage_records(session)
+    try:
+        records = list_triage_records(session)
+    except SQLAlchemyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Triage service is temporarily unavailable",
+        ) from exc
 
     return [
         TriageHistoryItem.model_validate(record)

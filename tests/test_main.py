@@ -187,3 +187,20 @@ def test_triage_returns_503_when_database_is_unavailable(
     assert response.json() == {
         "detail": "Triage service is temporarily unavailable"
     }
+
+
+def test_history_returns_503_when_database_is_unavailable(
+    database_session,
+):
+    database_error = SQLAlchemyError("Database unavailable")
+
+    with patch(
+        "app.main.list_triage_records",
+        side_effect=database_error,
+    ):
+        response = client.get("/history")
+
+    assert response.status_code == 503
+    assert response.json() == {
+        "detail": "Triage service is temporarily unavailable"
+    }

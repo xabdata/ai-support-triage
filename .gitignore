@@ -11,3 +11,8 @@ __pycache__/
 
 # Visual Studio Code
 .vscode/
+
+# Historial y notas locales de aprendizaje
+.Rhistory
+/FASES/
+/AGENTS.md
